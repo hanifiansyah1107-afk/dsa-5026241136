@@ -9,78 +9,75 @@ import java.util.Stack;
 
 public class BankTransaction {
     public static void main(String[] args) {
-        LinkedList<String[]> transactionsList = new LinkedList<>();
-        LinkedList<String[]> customersList = new LinkedList<>();
+        
+        LinkedList<String[]> transactions = new LinkedList<>();
+        LinkedList<String[]> customers = new LinkedList<>();
+        Queue<String[]> queue = new LinkedList<>();
+        Stack<String[]> failed = new Stack<>();
 
         try {
-            File file = new File("transactions.txt");
-            Scanner scanner = new Scanner(file);
+            Scanner scanner = new Scanner(new File("C:\\Users\\Dhany\\Downloads\\ASD\\transactions.txt"));
             
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                if (line.trim().isEmpty()) continue;
-                
-                String[] data = line.split(" ");
-                transactionsList.add(data);
-                
-                boolean exists = false;
-                for (String[] cust : customersList) {
-                    if (cust[0].equals(data[0])) {
-                        exists = true;
-                        break;
-                    }
-                }
-                if (!exists) {
-                    customersList.add(new String[]{data[0], "0"}); 
-                }
+            while(scanner.hasNext()){
+                String[] transaction = new String[3];
+                transaction[0] = scanner.next(); 
+                transaction[1] = scanner.next(); 
+                transaction[2] = scanner.next(); 
+                transactions.add(transaction);
             }
             scanner.close();
+            
         } catch (FileNotFoundException e) {
-            System.out.println("File transactions.txt tidak ditemukan.");
+            System.out.println("File tidak ditemukan.");
             return;
         }
 
-        Queue<String[]> transactionQueue = new LinkedList<>();
-        while (!transactionsList.isEmpty()) {
-            transactionQueue.add(transactionsList.poll());
-        }
+        queue.addAll(transactions);
 
-        Stack<String[]> failedTransactions = new Stack<>();
+        while (!queue.isEmpty()) {
+            String[] transaction = queue.poll();
 
-        while (!transactionQueue.isEmpty()) {
-            String[] trx = transactionQueue.poll();
-            String name = trx[0];
-            String type = trx[1];
-            int amount = Integer.parseInt(trx[2]);
+            String name = transaction[0];
+            String type = transaction[1];
+            int amount = Integer.parseInt(transaction[2]);
 
-            for (String[] cust : customersList) {
-                if (cust[0].equals(name)) {
-                    int balance = Integer.parseInt(cust[1]);
-                    
-                    if (type.equals("DEPOSIT")) {
-                        balance += amount;
-                        cust[1] = String.valueOf(balance);
-                    } else if (type.equals("WITHDRAW")) {
-                        if (amount > balance) {
-                            failedTransactions.push(trx); 
-                        } else {
-                            balance -= amount;
-                            cust[1] = String.valueOf(balance);
-                        }
-                    }
+            String[] customer = null;
+
+            for (String[] data : customers) {
+                if (data[0].equals(name)) {
+                    customer = data;
                     break;
+                }
+            }
+
+            if (customer == null) {
+                customer = new String[]{name, "0"};
+                customers.add(customer);
+            }
+
+            int balance = Integer.parseInt(customer[1]);
+
+            if (type.equals("DEPOSIT")) {
+                balance += amount;
+                customer[1] = String.valueOf(balance);
+            } else if (type.equals("WITHDRAW")) {
+                if (amount <= balance) {
+                    balance -= amount;
+                    customer[1] = String.valueOf(balance);
+                } else {
+                    failed.push(transaction); 
                 }
             }
         }
 
-        System.out.println("=== Final Balances ===");
-        for (String[] cust : customersList) {
+        System.out.println("\n=== Final Balances ===");
+        for (String[] cust : customers) {
             System.out.println(cust[0] + ": " + cust[1]);
         }
 
         System.out.println("=== Failed Transactions ===");
-        while (!failedTransactions.isEmpty()) {
-            String[] failedTrx = failedTransactions.pop();
+        while (!failed.isEmpty()) {
+            String[] failedTrx = failed.pop();
             System.out.println(failedTrx[0] + " " + failedTrx[1] + " " + failedTrx[2]);
         }
     }
